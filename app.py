@@ -132,7 +132,7 @@ def login():
 
         else:
             #user = User.query.filter_by(email=email).first()
-            user = User.query.filter((User.email == email) | (User.username == email)).first()
+            user = User.query.filter((User.email == email)).first()
             if user and check_password_hash(user.password, password):
                 role = user.role
                 login_user(user)
@@ -141,9 +141,9 @@ def login():
                 return redirect(url_for('login'))
 
         # Create JWT token
-        user = User.query.filter((User.email == email) | (User.username == email)).first()
+        
         token = jwt.encode({
-            'sub': user.email,
+            'sub': email,
             'role': role,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # 1 hour expiration
         }, app.config['SECRET_KEY'], algorithm='HS256')
