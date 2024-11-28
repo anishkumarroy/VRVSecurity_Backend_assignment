@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+{%if articles %}
+<div class="container text-center">
+    {% for article in articles %}
+    <div class="row">
+      <div class="col-6">
+        {{ article.title }}
+      </div>
+      <div class="col">
+        <small>By: {{ article.author.email }}</small>
+      </div>
+      <div class="col">
+        <form method="post" action="{{ url_for('delete_article_by_id', id=article.id) }}" style="display: inline;">
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+    <br>
+    {% endfor %}
+</div>
+{% else %}
+<p style="display: flex; justify-content: center; "> No articles to delete !!</p>
+
+{% endif %}
+
+{% endblock %}
