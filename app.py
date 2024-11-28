@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import jwt
 import datetime
-#from flask_migrate import Migrate
+from flask_migrate import Migrate
 
 load_dotenv()
 
@@ -47,7 +47,7 @@ class Article(db.Model):
     def __repr__(self):
         return f"<Article {self.title}>"
     
-# migrate = Migrate(app, db)
+migrate = Migrate(app, db)
 
 # Decorator for protecting routes
 def token_required(f):
@@ -141,6 +141,7 @@ def login():
                 return redirect(url_for('login'))
 
         # Create JWT token
+        user = User.query.filter((User.email == email) | (User.username == email)).first()
         token = jwt.encode({
             'sub': user.email,
             'role': role,
