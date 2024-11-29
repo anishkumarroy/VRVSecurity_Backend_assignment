@@ -11,7 +11,6 @@ from flask_migrate import Migrate
 
 load_dotenv()
 
-# Accessing environment variables
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 MODERATOR_EMAIL = os.getenv('MODERATOR_EMAIL')
@@ -25,14 +24,13 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 
 
-# Define the User and Article models
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(80), nullable=False)  # Role field (admin, user, moderator)
+    role = db.Column(db.String(80), nullable=False) 
 
     def __repr__(self):
         return f"<User {self.email}>"
@@ -49,16 +47,15 @@ class Article(db.Model):
     
 migrate = Migrate(app, db)
 
-# Decorator for protecting routes
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.cookies.get('jwt_token')  # Retrieve token from cookies
+        token = request.cookies.get('jwt_token') 
         if not token:
             return jsonify({'message': 'JWT Token is missing!'}), 401
 
         try:
-            # Decode token
+           
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
             current_user = User.query.filter_by(email=data['sub']).first()
             if not current_user:
@@ -68,19 +65,16 @@ def token_required(f):
         except jwt.InvalidTokenError:
             return jsonify({'message': 'Invalid token!'}), 401
 
-        # Pass current_user to the protected route
         return f(current_user, *args, **kwargs)
 
     return decorated
 
     
 
-# User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Routes and Views
 
 @app.route('/')
 def home():
@@ -93,12 +87,9 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        # Hardcoded login check for admin and moderator
-         # Check for admin credentials
         if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
             admin_user = User.query.filter_by(email=email).first()
 
-            # If admin user does not exist, create them
             if not admin_user:
                 admin_user = User(
                     username = 'administrator',
@@ -112,11 +103,9 @@ def login():
             role = 'admin'
             login_user(admin_user)
 
-        # Check for moderator credentials
         elif email == MODERATOR_EMAIL and password == MODERATOR_PASSWORD:
             moderator_user = User.query.filter_by(email=email).first()
 
-            # If moderator user does not exist, create them
             if not moderator_user:
                 moderator_user = User(
                     username='moderator',
@@ -131,7 +120,6 @@ def login():
             login_user(moderator_user)
 
         else:
-            #user = User.query.filter_by(email=email).first()
             user = User.query.filter((User.email == email)).first()
             if user and check_password_hash(user.password, password):
                 role = user.role
@@ -140,17 +128,16 @@ def login():
                 flash('Login Unsuccessful. Please check email and password.', 'danger')
                 return redirect(url_for('login'))
 
-        # Create JWT token
         
         token = jwt.encode({
             'sub': email,
             'role': role,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # 1 hour expiration
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  
         }, app.config['SECRET_KEY'], algorithm='HS256')
 
         #return jsonify({'message': 'Login successful', 'token': token})
         response = make_response(redirect(url_for('home' if role != 'admin' else 'admin')))
-        response.set_cookie('jwt_token', token, httponly=True, secure=False)  # httponly=True prevents JS access
+        response.set_cookie('jwt_token', token, httponly=True, secure=False)  
         flash('Login successful', 'success')
         return response
 
@@ -182,7 +169,6 @@ def register():
 
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         
-        # Default role is 'user' for new registrations
         new_user = User(username=username, email=email, password=hashed_password, role='user')
         db.session.add(new_user)
         db.session.commit()
@@ -295,4 +281,4 @@ def edit_role(current_user, id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run()
+    app.run(debug=True)
